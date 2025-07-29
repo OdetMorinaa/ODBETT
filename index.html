@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OdBett</title>
+<style>
+/* Reset and Global Styles */
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+background-color: white;
+color: #2ecc71;
+line-height: 1.6;
+}
+
+/* Container and Layout */
+.container {
+max-width: 1200px;
+margin: 0 auto;
+padding: 10px;
+}
+
+/* Header */
+.header {
+background-color: #2ecc71;
+color: white;
+padding: 15px 20px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.logo {
+font-size: 1.8rem;
+font-weight: bold;
+}
+
+.user-info {
+font-size: 1rem;
+}
+
+/* Hidden Class */
+.hidden {
+display: none;
+}
+
+/* Panels */
+.panel {
+background: white;
+border: 1px solid #2ecc71;
+border-radius: 8px;
+margin: 20px 0;
+overflow: hidden;
+box-shadow: 0 2px 10px rgba(46, 204, 113, 0.1);
+}
+
+.panel-header {
+background-color: #2ecc71;
+color: white;
+padding: 12px 15px;
+font-size: 1.1rem;
+font-weight: 600;
+}
+
+.panel-body {
+padding: 15px;
+}
+
+/* Forms */
+.form-group {
+margin-bottom: 15px;
+}
+
+label {
+display: block;
+margin-bottom: 5px;
+font-weight: 500;
+}
+
+input, select, button {
+width: 100%;
+padding: 10px;
+border: 1px solid #2ecc71;
+border-radius: 5px;
+font-size: 1rem;
+}
+
+input:focus, select:focus {
+outline: none;
+border-color: #27ae60;
+box-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
+}
+
+button {
+background-color: #2ecc71;
+color: white;
+border: none;
+cursor: pointer;
+font-weight: 600;
+transition: background 0.3s;
+margin-top: 5px;
+}
+
+button:hover {
+background-color: #27ae60;
+}
+
+/* Button Types */
+.btn-danger {
+background-color: #e74c3c;
+}
+
+.btn-danger:hover {
+background-color: #c0392b;
+}
+
+/* Tables */
+.table {
+width: 100%;
+border-collapse: collapse;
+margin: 15px 0;
+}
+
+.table th, .table td {
+padding: 12px;
+text-align: left;
+border-bottom: 1px solid #eee;
+}
+
+.table th {
+background-color: #2ecc71;
+color: white;
+}
+
+.table tr:hover {
+background-color: #f8f8f8;
+}
+
+/* Cards */
+.card {
+border: 1px solid #2ecc71;
+border-radius: 8px;
+padding: 15px;
+margin-bottom: 15px;
+background: white;
+}
+
+.card-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 10px;
+}
+
+/* Balance Display */
+.balance {
+font-size: 1.2rem;
+font-weight: 600;
+color: #2ecc71;
+text-align: center;
+padding: 15px;
+background-color: #f9f9f9;
+border: 1px solid #2ecc71;
+border-radius: 8px;
+margin: 15px 0;
+}
+
+/* Flex Layout */
+.flex {
+display: flex;
+gap: 10px;
+}
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+.flex-3 { flex: 3; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+.flex {
+flex-direction: column;
+}
+
+.header {
+flex-direction: column;
+text-align: center;
+gap: 10px;
+}
+
+.user-info {
+order: -1;
+}
+
+.table th, .table td {
+padding: 8px;
+font-size: 0.9rem;
+}
+
+input, button {
+font-size: 0.95rem;
+}
+}
+
+/* Login Form */
+.login-container {
+max-width: 400px;
+margin: 50px auto;
+padding: 30px;
+border: 2px solid #2ecc71;
+border-radius: 10px;
+text-align: center;
+}
+
+.login-container h1 {
+margin-bottom: 20px;
+color: #2ecc71;
+}
+
+.error {
+color: #e74c3c;
+margin: 10px 0;
+font-weight: 600;
+}
+
+/* Bet Buttons */
+.bet-button {
+background-color: #2ecc71;
+color: white;
+border: none;
+padding: 8px 12px;
+margin: 2px;
+border-radius: 4px;
+cursor: pointer;
+font-size: 0.9rem;
+}
+
+/* Status Badges */
+.status {
+padding: 3px 8px;
+border-radius: 12px;
+font-size: 0.8rem;
+font-weight: 600;
+}
+
+.status-pending {
+background-color: #f39c12;
+color: white;
+}
+
+.status-won {
+background-color: #27ae60;
+color: white;
+}
+
+.status-lost {
+background-color: #e74c3c;
+color: white;
+}
+</style>
+</head>
+<body>
+<!-- Header -->
+<div class="header">
+<div class="logo">OdBett</div>
+<div class="user-info" id="userInfo">Guest</div>
+</div>
+
+<!-- Login View -->
+<div class="login-container" id="loginView">
+<h1>Welcome</h1>
+<form id="loginForm">
+<div class="form-group">
+<input type="text" id="username" placeholder="Username" required />
+</div>
+<div class="form-group">
+<input type="password" id="password" placeholder="Password" required />
+</div>
+<button type="submit">Log In</button>
+<div id="errorMessage" class="error hidden"></div>
+</form>
+</div>
+
+<!-- Admin View -->
+<div id="adminView" class="container hidden">
+<!-- User Management -->
+<div class="panel">
+<div class="panel-header">User Management</div>
+<div class="panel-body">
+<!-- Create User -->
+<form id="createUserForm" class="flex">
+<div class="form-group flex-1">
+<input type="text" id="newUsername" placeholder="Username" required />
+</div>
+<div class="form-group flex-1">
+<input type="password" id="newPassword" placeholder="Password" required />
+</div>
+<div class="form-group flex-1">
+<button type="submit">Create User</button>
+</div>
+</form>
+
+<!-- Add Points -->
+<form id="addPointsForm" class="flex">
+<div class="form-group flex-1">
+<input type="text" id="targetUser" placeholder="Username" required />
+</div>
+<div class="form-group flex-1">
+<input type="number" id="pointsAmount" placeholder="Amount" min="1" required />
+</div>
+<div class="form-group flex-1">
+<button type="submit">Add Points</button>
+</div>
+</form>
+
+<!-- Users List -->
+<h3>All Users</h3>
+<table class="table">
+<thead>
+<tr>
+<th>Username</th>
+<th>BetPoints</th>
+</tr>
+</thead>
+<tbody id="usersList"></tbody>
+</table>
+</div>
+</div>
+
+<!-- Game Management -->
+<div class="panel">
+<div class="panel-header">Game Management</div>
+<div class="panel-body">
+<!-- Add Game -->
+<form id="addGameForm" class="flex">
+<div class="form-group flex-1">
+<input type="text" id="gameTitle" placeholder="Game Title" required />
+</div>
+<div class="form-group flex-1">
+<input type="text" id="team1" placeholder="Team 1" required />
+</div>
+<div class="form-group flex-1">
+<input type="number" id="odds1" placeholder="Odds 1" step="0.01" min="1" required />
+</div>
+<div class="form-group flex-1">
+<input type="text" id="team2" placeholder="Team 2" required />
+</div>
+<div class="form-group flex-1">
+<input type="number" id="odds2" placeholder="Odds 2" step="0.01" min="1" required />
+</div>
+<div class="form-group flex-1">
+<button type="submit">Add Game</button>
+</div>
+</form>
+
+<!-- Games List -->
+<h3>Active Games</h3>
+<div id="gamesList"></div>
+</div>
+</div>
+
+<button id="adminLogout" class="btn-danger" style="width: 100%;">Log Out</button>
+</div>
+
+<!-- User View -->
+<div id="userView" class="container hidden">
+<div class="balance" id="userBalance">BetPoints: 0</div>
+
+<!-- Games List -->
+<div class="panel">
+<div class="panel-header">Available Games</div>
+<div class="panel-body">
+<div id="userGamesList"></div>
+</div>
+</div>
+
+<!-- Bet History -->
+<div class="panel">
+<div class="panel-header">Bet History</div>
+<div class="panel-body">
+<table class="table">
+<thead>
+<tr>
+<th>Game</th>
+<th>Team</th>
+<th>Amount</th>
+<th>Odds</th>
+<th>Payout</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="betHistory"></tbody>
+</table>
+</div>
+</div>
+
+<button id="userLogout" class="btn-danger" style="width: 100%;">Log Out</button>
+</div>
+
+<script>
+// DOM Elements
+const loginView = document.getElementById('loginView');
+const adminView = document.getElementById('adminView');
+const userView = document.getElementById('userView');
+const userInfo = document.getElementById('userInfo');
+const errorMessage = document.getElementById('errorMessage');
+const userBalance = document.getElementById('userBalance');
+const usersList = document.getElementById('usersList');
+const gamesList = document.getElementById('gamesList');
+const userGamesList = document.getElementById('userGamesList');
+const betHistory = document.getElementById('betHistory');
+
+// Form Elements
+const loginForm = document.getElementById('loginForm');
+const createUserForm = document.getElementById('createUserForm');
+const addPointsForm = document.getElementById('addPointsForm');
+const addGameForm = document.getElementById('addGameForm');
+const adminLogout = document.getElementById('adminLogout');
+const userLogout = document.getElementById('userLogout');
+
+// Input Elements
+const username = document.getElementById('username');
+const password = document.getElementById('password');
+const newUsername = document.getElementById('newUsername');
+const newPassword = document.getElementById('newPassword');
+const targetUser = document.getElementById('targetUser');
+const pointsAmount = document.getElementById('pointsAmount');
+const gameTitle = document.getElementById('gameTitle');
+const team1 = document.getElementById('team1');
+const odds1 = document.getElementById('odds1');
+const team2 = document.getElementById('team2');
+const odds2 = document.getElementById('odds2');
+
+// Current logged-in user
+let currentUser = null;
+let isAdmin = false;
+
+// Initialize localStorage if empty
+function initStorage() {
+if (!localStorage.getItem('users')) {
+// Create admin user
+const adminUser = {
+username: 'Odii01',
+password: 'Odi049',
+points: 1000
+};
+localStorage.setItem('users', JSON.stringify([adminUser]));
+}
+
+if (!localStorage.getItem('games')) {
+localStorage.setItem('games', JSON.stringify([]));
+}
+
+if (!localStorage.getItem('bets')) {
+localStorage.setItem('bets', JSON.stringify([]));
+}
+}
+
+// Get data from localStorage
+function getUsers() {
+return JSON.parse(localStorage.getItem('users')) || [];
+}
+
+function getGames() {
+return JSON.parse(localStorage.getItem('games')) || [];
+}
+
+function getBets() {
+return JSON.parse(localStorage.getItem('bets')) || [];
+}
+
+// Save data to localStorage
+function saveUsers(users) {
+localStorage.setItem('users', JSON.stringify(users));
+}
+
+function saveGames(games) {
+localStorage.setItem('games', JSON.stringify(games));
+}
+
+function saveBets(bets) {
+localStorage.setItem('bets', JSON.stringify(bets));
+}
+
+// Find user by username
+function findUser(username) {
+const users = getUsers();
+return users.find(user => user.username === username);
+}
+
+// Update user
+function updateUser(user) {
+const users = getUsers();
+const index = users.findIndex(u => u.username === user.username);
+if (index !== -1) {
+users[index] = user;
+saveUsers(users);
+return true;
+}
+return false;
+}
+
+// Add new user
+function addUser(username, password) {
+if (findUser(username)) return false;
+
+const newUser = {
+username: username,
+password: password,
+points: 100 // Starting balance
+};
+
+const users = getUsers();
+users.push(newUser);
+saveUsers(users);
+return true;
+}
+
+// Add points to user
+function addPointsToUser(username, amount) {
+const user = findUser(username);
+if (user) {
+user.points += parseInt(amount);
+updateUser(user);
+return true;
+}
+return false;
+}
+
+// Create new game
+function createGame(title, team1, team2, odds1, odds2) {
+const games = getGames();
+const newGame = {
+id: Date.now().toString(),
+title: title,
+team1: team1,
+team2: team2,
+odds1: parseFloat(odds1),
+odds2: parseFloat(odds2),
+result: null // null = pending, 1 or 2 = winner
+};
+games.push(newGame);
+saveGames(games);
+return newGame;
+}
+
+// Place a bet
+function placeBet(username, gameId, team, amount, odds) {
+const user = findUser(username);
+if (!user || user.points < amount) return false;
+
+// Deduct points
+user.points -= amount;
+updateUser(user);
+
+const bets = getBets();
+const newBet = {
+id: Date.now().toString(),
+username: username,
+gameId: gameId,
+team: team,
+amount: amount,
+odds: odds,
+status: 'pending' // pending, won, lost
+};
+bets.push(newBet);
+saveBets(bets);
+return true;
+}
+
+// Resolve game - declare winner
+function resolveGame(gameId, winner) {
+const games = getGames();
+const gameIndex = games.findIndex(g => g.id === gameId);
+if (gameIndex === -1 || games[gameIndex].result !== null) return false;
+
+games[gameIndex].result = winner;
+saveGames(games);
+
+// Update bets
+const bets = getBets();
+const winningBets = bets.filter(bet => bet.gameId === gameId && bet.team === winner);
+
+winningBets.forEach(bet => {
+const user = findUser(bet.username);
+if (user) {
+const winnings = bet.amount * bet.odds;
+user.points += winnings;
+updateUser(user);
+}
+bet.status = 'won';
+});
+
+// Mark other bets as lost
+bets
+.filter(bet => bet.gameId === gameId && bet.team !== winner && bet.status === 'pending')
+.forEach(bet => {
+bet.status = 'lost';
+});
+
+saveBets(bets);
+return true;
+}
+
+// Display all users in admin panel
+function displayUsers() {
+const users = getUsers();
+usersList.innerHTML = '';
+
+users.forEach(user => {
+const tr = document.createElement('tr');
+tr.innerHTML = `
+<td>${user.username}</td>
+<td>${user.points}</td>
+`;
+usersList.appendChild(tr);
+});
+}
+
+// Display all games in admin panel with resolution controls
+function displayGames() {
+const games = getGames();
+gamesList.innerHTML = '';
+
+if (games.length === 0) {
+gamesList.innerHTML = '<p>No games available.</p>';
+return;
+}
+
+games.forEach(game => {
+const gameCard = document.createElement('div');
+gameCard.className = 'card';
+
+let resultText = 'Pending';
+if (game.result === 1) resultText = `${game.team1} won`;
+if (game.result === 2) resultText = `${game.team2} won`;
+
+gameCard.innerHTML = `
+<div class="card-header">
+<strong>${game.title}</strong>
+<span>Status: ${resultText}</span>
+</div>
+<div>
+<strong>${game.team1}</strong> (${game.odds1}) vs
+<strong>${game.team2}</strong> (${game.odds2})
+</div>
+`;
+
+// Add resolution buttons if game is pending
+if (game.result === null) {
+const resolveDiv = document.createElement('div');
+resolveDiv.style.marginTop = '10px';
+resolveDiv.innerHTML = `
+<button class="bet-button" data-game="${game.id}" data-winner="1">
+${game.team1} wins
+</button>
+<button class="bet-button" data-game="${game.id}" data-winner="2">
+${game.team2} wins
+</button>
+`;
+gameCard.appendChild(resolveDiv);
+
+// Add event listeners
+resolveDiv.querySelectorAll('button').forEach(btn => {
+btn.addEventListener('click', () => {
+const gameId = btn.getAttribute('data-game');
+const winner = parseInt(btn.getAttribute('data-winner'));
+if (resolveGame(gameId, winner)) {
+alert(`Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!`);
+displayGames();
+if (currentUser) displayUserBets();
+}
+});
+});
+}
+
+gamesList.appendChild(gameCard);
+});
+}
+
+// Display games for user betting
+function displayUserGames() {
+const games = getGames();
+userGamesList.innerHTML = '';
+
+if (games.length === 0) {
+userGamesList.innerHTML = '<p>No games available for betting.</p>';
+return;
+}
+
+games.forEach(game => {
+if (game.result !== null) return; // Skip resolved games
+
+const gameCard = document.createElement('div');
+gameCard.className = 'card';
+
+gameCard.innerHTML = `
+<div class="card-header">
+<strong>${game.title}</strong>
+</div>
+<div style="margin: 10px 0;">
+<button class="bet-button" data-game="${game.id}" data-team="1" data-odds="${game.odds1}">
+${game.team1} (${game.odds1})
+</button>
+<button class="bet-button" data-game="${game.id}" data-team="2" data-odds="${game.odds2}">
+${game.team2} (${game.odds2})
+</button>
+</div>
+<form class="flex">
+<input type="number" class="bet-amount" placeholder="Amount" min="1" value="10" required />
+<button type="submit" class="btn" data-game="${game.id}">Place Bet</button>
+</form>
+`;
+
+// Add event listeners for bet buttons
+const betButtons = gameCard.querySelectorAll('.bet-button');
+betButtons.forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.preventDefault();
+betButtons.forEach(b => b.style.fontWeight = 'normal');
+btn.style.fontWeight = 'bold';
+
+const form = gameCard.querySelector('form');
+form.setAttribute('data-team', btn.getAttribute('data-team'));
+form.setAttribute('data-odds', btn.getAttribute('data-odds'));
+});
+});
+
+// Handle bet submission
+const betForm = gameCard.querySelector('form');
+betForm.addEventListener('submit', (e) => {
+e.preventDefault();
+const amountInput = betForm.querySelector('.bet-amount');
+const amount = parseInt(amountInput.value);
+const gameId = betForm.getAttribute('data-game');
+const team = parseInt(betForm.getAttribute('data-team'));
+const odds = parseFloat(betForm.getAttribute('data-odds'));
+
+if (!team) {
+alert('Please select a team to bet on.');
+return;
+}
+
+if (placeBet(currentUser.username, gameId, team, amount, odds)) {
+alert(`Bet placed successfully! ${amount} BetPoints on team.`);
+amountInput.value = '10';
+userBalance.textContent = `BetPoints: ${currentUser.points}`;
+displayUserBets();
+} else {
+alert('Insufficient BetPoints or invalid bet.');
+}
+});
+
+userGamesList.appendChild(gameCard);
+});
+}
+
+// Display user's bet history
+function displayUserBets() {
+const bets = getBets().filter(bet => bet.username === currentUser.username);
+const games = getGames();
+betHistory.innerHTML = '';
+
+if (bets.length === 0) {
+const tr = document.createElement('tr');
+tr.innerHTML = '<td colspan="6" style="text-align: center;">No bets placed yet.</td>';
+betHistory.appendChild(tr);
+return;
+}
+
+bets.forEach(bet => {
+const game = games.find(g => g.id === bet.gameId);
+const gameTitle = game ? game.title : 'Unknown Game';
+const teamName = bet.team === 1 ? game?.team1 : game?.team2;
+const payout = bet.status === 'won' ? (bet.amount * bet.odds).toFixed(2) : '-';
+
+const tr = document.createElement('tr');
+tr.innerHTML = `
+<td>${gameTitle}</td>
+<td>${teamName}</td>
+<td>${bet.amount}</td>
+<td>${bet.odds}</td>
+<td>${payout}</td>
+<td><span class="status status-${bet.status}">${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}</span></td>
+`;
+betHistory.appendChild(tr);
+});
+}
+
+// Show error message
+function showError(message) {
+errorMessage.textContent = message;
+errorMessage.classList.remove('hidden');
+}
+
+// Clear error message
+function clearError() {
+errorMessage.classList.add('hidden');
+errorMessage.textContent = '';
+}
+
+// Show specific view
+function showView(view) {
+loginView.classList.add('hidden');
+adminView.classList.add('hidden');
+userView.classList.add('hidden');
+view.classList.remove('hidden');
+}
+
+// Handle login
+loginForm.addEventListener('submit', function(e) {
+e.preventDefault();
+clearError();
+
+const usernameVal = username.value.trim();
+const passwordVal = password.value;
+
+// Check for admin
+if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
+currentUser = findUser(usernameVal);
+isAdmin = true;
+userInfo.textContent = `Admin: ${usernameVal}`;
+showView(adminView);
+displayUsers();
+displayGames();
+return;
+}
+
+// Check for regular user
+const user = findUser(usernameVal);
+if (user && user.password === passwordVal) {
+currentUser = user;
+isAdmin = false;
+userInfo.textContent = `User: ${usernameVal}`;
+showView(userView);
+userBalance.textContent = `BetPoints: ${user.points}`;
+displayUserGames();
+displayUserBets();
+return;
+}
+
+showError('Invalid username or password.');
+});
+
+// Create user
+createUserForm.addEventListener('submit', function(e) {
+e.preventDefault();
+clearError();
+
+const newUsernameVal = newUsername.value.trim();
+const newPasswordVal = newPassword.value;
+
+if (addUser(newUsernameVal, newPasswordVal)) {
+newUsername.value = '';
+newPassword.value = '';
+displayUsers();
+alert('User created successfully!');
+} else {
+showError('Username already exists.');
+}
+});
+
+// Add points
+addPointsForm.addEventListener('submit', function(e) {
+e.preventDefault();
+clearError();
+
+const targetUserVal = targetUser.value.trim();
+const pointsAmountVal = pointsAmount.value;
+
+if (addPointsToUser(targetUserVal, pointsAmountVal)) {
+targetUser.value = '';
+pointsAmount.value = '';
+displayUsers();
+alert(`Successfully added ${pointsAmountVal} BetPoints to ${targetUserVal}.`);
+} else {
+showError('User not found.');
+}
+});
+
+// Add game
+addGameForm.addEventListener('submit', function(e) {
+e.preventDefault();
+clearError();
+
+const title = gameTitle.value.trim();
+const t1 = team1.value.trim();
+const t2 = team2.value.trim();
+const o1 = odds1.value;
+const o2 = odds2.value;
+
+if (createGame(title, t1, t2, o1, o2)) {
+gameTitle.value = '';
+team1.value = '';
+team2.value = '';
+odds1.value = '';
+odds2.value = '';
+displayGames();
+alert('Game added successfully!');
+// Update user view if a user is logged in
+if (currentUser && !isAdmin) {
+displayUserGames();
+}
+} else {
+showError('Error adding game.');
+}
+});
+
+// Logout handlers
+adminLogout.addEventListener('click', function() {
+currentUser = null;
+isAdmin = false;
+userInfo.textContent = 'Guest';
+username.value = '';
+password.value = '';
+clearError();
+showView(loginView);
+});
+
+userLogout.addEventListener('click', function() {
+currentUser = null;
+isAdmin = false;
+userInfo.textContent = 'Guest';
+username.value = '';
+password.value = '';
+clearError();
+showView(loginView);
+});
+
+// Initialize app
+initStorage();
+showView(loginView);
+</script>
+</body>
+</html>
