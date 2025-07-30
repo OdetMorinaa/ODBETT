@@ -621,6 +621,35 @@ tr.innerHTML = `
 `;
 usersList.appendChild(tr);
 });
+  let userColumnClickCount = 0;
+let userColumnClickTimer = null;
+
+function enableTripleClickDelete() {
+  const usernameHeader = document.querySelector('.table thead th:first-child');
+  if (!usernameHeader) return;
+
+  usernameHeader.addEventListener('click', () => {
+    userColumnClickCount++;
+
+    if (userColumnClickCount === 3) {
+      // Triple click detected – remove column
+      const rows = document.querySelectorAll('.table tr');
+      rows.forEach(row => {
+        if (row.children[0]) {
+          row.removeChild(row.children[0]);
+        }
+      });
+      userColumnClickCount = 0;
+      clearTimeout(userColumnClickTimer);
+    } else {
+      // Reset after 500ms if not triple clicked
+      clearTimeout(userColumnClickTimer);
+      userColumnClickTimer = setTimeout(() => {
+        userColumnClickCount = 0;
+      }, 500);
+    }
+  });
+}
 }
 
 // Display all games in admin panel with resolution controls
@@ -923,35 +952,7 @@ clearError();
 showView(loginView);
 });
 
-let userColumnClickCount = 0;
-let userColumnClickTimer = null;
 
-function enableTripleClickDelete() {
-  const usernameHeader = document.querySelector('.table thead th:first-child');
-  if (!usernameHeader) return;
-
-  usernameHeader.addEventListener('click', () => {
-    userColumnClickCount++;
-
-    if (userColumnClickCount === 3) {
-      // Triple click detected – remove column
-      const rows = document.querySelectorAll('.table tr');
-      rows.forEach(row => {
-        if (row.children[0]) {
-          row.removeChild(row.children[0]);
-        }
-      });
-      userColumnClickCount = 0;
-      clearTimeout(userColumnClickTimer);
-    } else {
-      // Reset after 500ms if not triple clicked
-      clearTimeout(userColumnClickTimer);
-      userColumnClickTimer = setTimeout(() => {
-        userColumnClickCount = 0;
-      }, 500);
-    }
-  });
-}
 
   
 userLogout.addEventListener('click', function() {
