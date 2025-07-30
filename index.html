@@ -625,7 +625,7 @@ function displayUsers() {
       <td>${user.username}</td>
       <td>${user.points}</td>
     `;
-
+    
     // Add long-press delete functionality
     let pressTimer;
     tr.addEventListener('mousedown', () => {
@@ -777,6 +777,7 @@ function displayUserGames() {
       if (placeBet(currentUser.username, gameId, team, amount, odds)) {
         alert(`Bet placed successfully! ${amount} BetPoints on team.`);
         amountInput.value = '10';
+        // Refresh currentUser points from storage (in case points updated)
         currentUser = findUser(currentUser.username);
         userBalance.textContent = `BetPoints: ${currentUser.points}`;
         displayUserBets();
