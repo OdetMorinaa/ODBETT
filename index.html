@@ -674,7 +674,6 @@
                     }
                     
                     renderAll();
-                    showNotification('Login successful!', 'success');
                 } else {
                     showNotification('Invalid username or password', 'danger');
                 }
@@ -687,7 +686,7 @@
                 app.classList.add('hidden');
                 document.getElementById('username').value = '';
                 document.getElementById('password').value = '';
-                showNotification('Logged out successfully', 'success');
+                
             }
 
             // Toggle dark/light mode
