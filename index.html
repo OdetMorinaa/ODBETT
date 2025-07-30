@@ -403,7 +403,6 @@ color: white;
 <button id="userLogout" class="btn-danger" style="width: 100%;">Log Out</button>
 </div>
 
-<script>
 // DOM Elements
 const loginView = document.getElementById('loginView');
 const adminView = document.getElementById('adminView');
@@ -443,506 +442,535 @@ let isAdmin = false;
 
 // Initialize localStorage if empty
 function initStorage() {
-if (!localStorage.getItem('users')) {
-// Create admin user
-const adminUser = {
-username: 'Odii01',
-password: 'Odi049',
-points: 1000
-};
-localStorage.setItem('users', JSON.stringify([adminUser]));
-}
+  if (!localStorage.getItem('users')) {
+    // Create admin user
+    const adminUser = {
+      username: 'Odii01',
+      password: 'Odi049',
+      points: 1000
+    };
+    localStorage.setItem('users', JSON.stringify([adminUser]));
+  }
 
-if (!localStorage.getItem('games')) {
-localStorage.setItem('games', JSON.stringify([]));
-}
+  if (!localStorage.getItem('games')) {
+    localStorage.setItem('games', JSON.stringify([]));
+  }
 
-if (!localStorage.getItem('bets')) {
-localStorage.setItem('bets', JSON.stringify([]));
-}
+  if (!localStorage.getItem('bets')) {
+    localStorage.setItem('bets', JSON.stringify([]));
+  }
 }
 
 // Get data from localStorage
 function getUsers() {
-return JSON.parse(localStorage.getItem('users')) || [];
+  return JSON.parse(localStorage.getItem('users')) || [];
 }
 
 function getGames() {
-return JSON.parse(localStorage.getItem('games')) || [];
+  return JSON.parse(localStorage.getItem('games')) || [];
 }
 
 function getBets() {
-return JSON.parse(localStorage.getItem('bets')) || [];
+  return JSON.parse(localStorage.getItem('bets')) || [];
 }
 
 // Save data to localStorage
 function saveUsers(users) {
-localStorage.setItem('users', JSON.stringify(users));
+  localStorage.setItem('users', JSON.stringify(users));
 }
 
 function saveGames(games) {
-localStorage.setItem('games', JSON.stringify(games));
+  localStorage.setItem('games', JSON.stringify(games));
 }
 
 function saveBets(bets) {
-localStorage.setItem('bets', JSON.stringify(bets));
+  localStorage.setItem('bets', JSON.stringify(bets));
 }
 
 // Find user by username
 function findUser(username) {
-const users = getUsers();
-return users.find(user => user.username === username);
+  const users = getUsers();
+  return users.find(user => user.username === username);
 }
 
 // Update user
 function updateUser(user) {
-const users = getUsers();
-const index = users.findIndex(u => u.username === user.username);
-if (index !== -1) {
-users[index] = user;
-saveUsers(users);
-return true;
-}
-return false;
+  const users = getUsers();
+  const index = users.findIndex(u => u.username === user.username);
+  if (index !== -1) {
+    users[index] = user;
+    saveUsers(users);
+    return true;
+  }
+  return false;
 }
 
 // Add new user
 function addUser(username, password) {
-if (findUser(username)) return false;
+  if (findUser(username)) return false;
 
-const newUser = {
-username: username,
-password: password,
-points: 0 // Starting balance
-};
+  const newUser = {
+    username: username,
+    password: password,
+    points: 0 // Starting balance
+  };
 
-const users = getUsers();
-users.push(newUser);
-saveUsers(users);
-return true;
+  const users = getUsers();
+  users.push(newUser);
+  saveUsers(users);
+  return true;
+}
+
+// Delete user by username
+function deleteUser(username) {
+  let users = getUsers();
+  users = users.filter(user => user.username !== username);
+  saveUsers(users);
 }
 
 // Add points to user
 function addPointsToUser(username, amount) {
-const user = findUser(username);
-if (user) {
-user.points += parseInt(amount);
-updateUser(user);
-return true;
-}
-return false;
+  const user = findUser(username);
+  if (user) {
+    user.points += parseInt(amount);
+    updateUser(user);
+    return true;
+  }
+  return false;
 }
 
 // Create new game
 function createGame(title, team1, team2, odds1, odds2) {
-const games = getGames();
-const newGame = {
-id: Date.now().toString(),
-title: title,
-team1: team1,
-team2: team2,
-odds1: parseFloat(odds1),
-odds2: parseFloat(odds2),
-result: null // null = pending, 1 or 2 = winner
-};
-games.push(newGame);
-saveGames(games);
-return newGame;
+  const games = getGames();
+  const newGame = {
+    id: Date.now().toString(),
+    title: title,
+    team1: team1,
+    team2: team2,
+    odds1: parseFloat(odds1),
+    odds2: parseFloat(odds2),
+    result: null // null = pending, 1 or 2 = winner
+  };
+  games.push(newGame);
+  saveGames(games);
+  return newGame;
 }
 
 // Place a bet
 function placeBet(username, gameId, team, amount, odds) {
-const user = findUser(username);
-if (!user || user.points < amount) return false;
+  const user = findUser(username);
+  if (!user || user.points < amount) return false;
 
-// Deduct points
-user.points -= amount;
-updateUser(user);
+  // Deduct points
+  user.points -= amount;
+  updateUser(user);
 
-const bets = getBets();
-const newBet = {
-id: Date.now().toString(),
-username: username,
-gameId: gameId,
-team: team,
-amount: amount,
-odds: odds,
-status: 'pending' // pending, won, lost
-};
-bets.push(newBet);
-saveBets(bets);
-return true;
+  const bets = getBets();
+  const newBet = {
+    id: Date.now().toString(),
+    username: username,
+    gameId: gameId,
+    team: team,
+    amount: amount,
+    odds: odds,
+    status: 'pending' // pending, won, lost
+  };
+  bets.push(newBet);
+  saveBets(bets);
+  return true;
 }
 
 // Resolve game - declare winner
 function resolveGame(gameId, winner) {
-const games = getGames();
-const gameIndex = games.findIndex(g => g.id === gameId);
-if (gameIndex === -1 || games[gameIndex].result !== null) return false;
+  const games = getGames();
+  const gameIndex = games.findIndex(g => g.id === gameId);
+  if (gameIndex === -1 || games[gameIndex].result !== null) return false;
 
-games[gameIndex].result = winner;
-saveGames(games);
+  games[gameIndex].result = winner;
+  saveGames(games);
 
-// Update bets
-const bets = getBets();
-const winningBets = bets.filter(bet => bet.gameId === gameId && bet.team === winner);
+  // Update bets
+  const bets = getBets();
+  const winningBets = bets.filter(bet => bet.gameId === gameId && bet.team === winner);
 
-winningBets.forEach(bet => {
-const user = findUser(bet.username);
-if (user) {
-const winnings = bet.amount * bet.odds;
-user.points += winnings;
-updateUser(user);
-}
-bet.status = 'won';
-});
+  winningBets.forEach(bet => {
+    const user = findUser(bet.username);
+    if (user) {
+      const winnings = bet.amount * bet.odds;
+      user.points += winnings;
+      updateUser(user);
+    }
+    bet.status = 'won';
+  });
 
-// Mark other bets as lost
-bets
-.filter(bet => bet.gameId === gameId && bet.team !== winner && bet.status === 'pending')
-.forEach(bet => {
-bet.status = 'lost';
-});
+  // Mark other bets as lost
+  bets
+    .filter(bet => bet.gameId === gameId && bet.team !== winner && bet.status === 'pending')
+    .forEach(bet => {
+      bet.status = 'lost';
+    });
 
-saveBets(bets);
-return true;
+  saveBets(bets);
+  return true;
 }
 
 // Display all users in admin panel
 function displayUsers() {
-const users = getUsers();
-usersList.innerHTML = '';
+  const users = getUsers();
+  usersList.innerHTML = '';
 
-users.forEach(user => {
-const tr = document.createElement('tr');
-tr.innerHTML = `
-<td>${user.username}</td>
-<td>${user.points}</td>
-`;
-usersList.appendChild(tr);
-});
+  users.forEach(user => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${user.username}</td>
+      <td>${user.points}</td>
+    `;
+
+    // Add long-press delete functionality
+    let pressTimer;
+    tr.addEventListener('mousedown', () => {
+      pressTimer = window.setTimeout(() => {
+        if (confirm(`Delete user "${user.username}"? This action cannot be undone.`)) {
+          deleteUser(user.username);
+          displayUsers();
+          alert(`User "${user.username}" deleted.`);
+        }
+      }, 5000); // 5 seconds hold
+    });
+
+    tr.addEventListener('mouseup', () => {
+      clearTimeout(pressTimer);
+    });
+
+    tr.addEventListener('mouseleave', () => {
+      clearTimeout(pressTimer);
+    });
+
+    usersList.appendChild(tr);
+  });
 }
 
 // Display all games in admin panel with resolution controls
 function displayGames() {
-const games = getGames();
-gamesList.innerHTML = '';
+  const games = getGames();
+  gamesList.innerHTML = '';
 
-if (games.length === 0) {
-gamesList.innerHTML = '<p>No games available.</p>';
-return;
-}
+  if (games.length === 0) {
+    gamesList.innerHTML = '<p>No games available.</p>';
+    return;
+  }
 
-games.forEach(game => {
-const gameCard = document.createElement('div');
-gameCard.className = 'card';
+  games.forEach(game => {
+    const gameCard = document.createElement('div');
+    gameCard.className = 'card';
 
-let resultText = 'Pending';
-if (game.result === 1) resultText = `${game.team1} won`;
-if (game.result === 2) resultText = `${game.team2} won`;
+    let resultText = 'Pending';
+    if (game.result === 1) resultText = `${game.team1} won`;
+    if (game.result === 2) resultText = `${game.team2} won`;
 
-gameCard.innerHTML = `
-<div class="card-header">
-<strong>${game.title}</strong>
-<span>Status: ${resultText}</span>
-</div>
-<div>
-<strong>${game.team1}</strong> (${game.odds1}) vs
-<strong>${game.team2}</strong> (${game.odds2})
-</div>
-`;
+    gameCard.innerHTML = `
+      <div class="card-header">
+        <strong>${game.title}</strong>
+        <span>Status: ${resultText}</span>
+      </div>
+      <div>
+        <strong>${game.team1}</strong> (${game.odds1}) vs
+        <strong>${game.team2}</strong> (${game.odds2})
+      </div>
+    `;
 
-// Add resolution buttons if game is pending
-if (game.result === null) {
-const resolveDiv = document.createElement('div');
-resolveDiv.style.marginTop = '10px';
-resolveDiv.innerHTML = `
-<button class="bet-button" data-game="${game.id}" data-winner="1">
-${game.team1} wins
-</button>
-<button class="bet-button" data-game="${game.id}" data-winner="2">
-${game.team2} wins
-</button>
-`;
-gameCard.appendChild(resolveDiv);
+    // Add resolution buttons if game is pending
+    if (game.result === null) {
+      const resolveDiv = document.createElement('div');
+      resolveDiv.style.marginTop = '10px';
+      resolveDiv.innerHTML = `
+        <button class="bet-button" data-game="${game.id}" data-winner="1">
+          ${game.team1} wins
+        </button>
+        <button class="bet-button" data-game="${game.id}" data-winner="2">
+          ${game.team2} wins
+        </button>
+      `;
+      gameCard.appendChild(resolveDiv);
 
-// Add event listeners
-resolveDiv.querySelectorAll('button').forEach(btn => {
-btn.addEventListener('click', () => {
-const gameId = btn.getAttribute('data-game');
-const winner = parseInt(btn.getAttribute('data-winner'));
-if (resolveGame(gameId, winner)) {
-alert(`Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!`);
-displayGames();
-if (currentUser) displayUserBets();
-}
-});
-});
-}
+      // Add event listeners
+      resolveDiv.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const gameId = btn.getAttribute('data-game');
+          const winner = parseInt(btn.getAttribute('data-winner'));
+          if (resolveGame(gameId, winner)) {
+            alert(`Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!`);
+            displayGames();
+            if (currentUser) displayUserBets();
+          }
+        });
+      });
+    }
 
-gamesList.appendChild(gameCard);
-});
+    gamesList.appendChild(gameCard);
+  });
 }
 
 // Display games for user betting
 function displayUserGames() {
-const games = getGames();
-userGamesList.innerHTML = '';
+  const games = getGames();
+  userGamesList.innerHTML = '';
 
-if (games.length === 0) {
-userGamesList.innerHTML = '<p>No games available for betting.</p>';
-return;
-}
+  if (games.length === 0) {
+    userGamesList.innerHTML = '<p>No games available for betting.</p>';
+    return;
+  }
 
-games.forEach(game => {
-if (game.result !== null) return; // Skip resolved games
+  games.forEach(game => {
+    if (game.result !== null) return; // Skip resolved games
 
-const gameCard = document.createElement('div');
-gameCard.className = 'card';
+    const gameCard = document.createElement('div');
+    gameCard.className = 'card';
 
-gameCard.innerHTML = `
-<div class="card-header">
-<strong>${game.title}</strong>
-</div>
-<div style="margin: 10px 0;">
-<button class="bet-button" data-game="${game.id}" data-team="1" data-odds="${game.odds1}">
-${game.team1} (${game.odds1})
-</button>
-<button class="bet-button" data-game="${game.id}" data-team="2" data-odds="${game.odds2}">
-${game.team2} (${game.odds2})
-</button>
-</div>
-<form class="flex">
-<input type="number" class="bet-amount" placeholder="Amount" min="1" value="10" required />
-<button type="submit" class="btn" data-game="${game.id}">Place Bet</button>
-</form>
-`;
+    gameCard.innerHTML = `
+      <div class="card-header">
+        <strong>${game.title}</strong>
+      </div>
+      <div style="margin: 10px 0;">
+        <button class="bet-button" data-game="${game.id}" data-team="1" data-odds="${game.odds1}">
+          ${game.team1} (${game.odds1})
+        </button>
+        <button class="bet-button" data-game="${game.id}" data-team="2" data-odds="${game.odds2}">
+          ${game.team2} (${game.odds2})
+        </button>
+      </div>
+      <form class="flex">
+        <input type="number" class="bet-amount" placeholder="Amount" min="1" value="10" required />
+        <button type="submit" class="btn" data-game="${game.id}">Place Bet</button>
+      </form>
+    `;
 
-// Add event listeners for bet buttons
-const betButtons = gameCard.querySelectorAll('.bet-button');
-betButtons.forEach(btn => {
-btn.addEventListener('click', (e) => {
-e.preventDefault();
-betButtons.forEach(b => b.style.fontWeight = 'normal');
-btn.style.fontWeight = 'bold';
+    // Add event listeners for bet buttons
+    const betButtons = gameCard.querySelectorAll('.bet-button');
+    betButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        betButtons.forEach(b => b.style.fontWeight = 'normal');
+        btn.style.fontWeight = 'bold';
 
-const form = gameCard.querySelector('form');
-form.setAttribute('data-team', btn.getAttribute('data-team'));
-form.setAttribute('data-odds', btn.getAttribute('data-odds'));
-});
-});
+        const form = gameCard.querySelector('form');
+        form.setAttribute('data-team', btn.getAttribute('data-team'));
+        form.setAttribute('data-odds', btn.getAttribute('data-odds'));
+      });
+    });
 
-// Handle bet submission
-const betForm = gameCard.querySelector('form');
-betForm.addEventListener('submit', (e) => {
-e.preventDefault();
-const amountInput = betForm.querySelector('.bet-amount');
-const amount = parseInt(amountInput.value);
-const gameId = betForm.getAttribute('data-game');
-const team = parseInt(betForm.getAttribute('data-team'));
-const odds = parseFloat(betForm.getAttribute('data-odds'));
+    // Handle bet submission
+    const betForm = gameCard.querySelector('form');
+    betForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const amountInput = betForm.querySelector('.bet-amount');
+      const amount = parseInt(amountInput.value);
+      const gameId = betForm.getAttribute('data-game');
+      const team = parseInt(betForm.getAttribute('data-team'));
+      const odds = parseFloat(betForm.getAttribute('data-odds'));
 
-if (!team) {
-alert('Please select a team to bet on.');
-return;
-}
+      if (!team) {
+        alert('Please select a team to bet on.');
+        return;
+      }
 
-if (placeBet(currentUser.username, gameId, team, amount, odds)) {
-alert(`Bet placed successfully! ${amount} BetPoints on team.`);
-amountInput.value = '10';
-userBalance.textContent = `BetPoints: ${currentUser.points}`;
-displayUserBets();
-} else {
-alert('Insufficient BetPoints or invalid bet.');
-}
-});
+      if (placeBet(currentUser.username, gameId, team, amount, odds)) {
+        alert(`Bet placed successfully! ${amount} BetPoints on team.`);
+        amountInput.value = '10';
+        currentUser = findUser(currentUser.username);
+        userBalance.textContent = `BetPoints: ${currentUser.points}`;
+        displayUserBets();
+      } else {
+        alert('Insufficient BetPoints or invalid bet.');
+      }
+    });
 
-userGamesList.appendChild(gameCard);
-});
+    userGamesList.appendChild(gameCard);
+  });
 }
 
 // Display user's bet history
 function displayUserBets() {
-const bets = getBets().filter(bet => bet.username === currentUser.username);
-const games = getGames();
-betHistory.innerHTML = '';
+  const bets = getBets().filter(bet => bet.username === currentUser.username);
+  const games = getGames();
+  betHistory.innerHTML = '';
 
-if (bets.length === 0) {
-const tr = document.createElement('tr');
-tr.innerHTML = '<td colspan="6" style="text-align: center;">No bets placed yet.</td>';
-betHistory.appendChild(tr);
-return;
-}
+  if (bets.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="6" style="text-align: center;">No bets placed yet.</td>';
+    betHistory.appendChild(tr);
+    return;
+  }
 
-bets.forEach(bet => {
-const game = games.find(g => g.id === bet.gameId);
-const gameTitle = game ? game.title : 'Unknown Game';
-const teamName = bet.team === 1 ? game?.team1 : game?.team2;
-const payout = bet.status === 'won' ? (bet.amount * bet.odds).toFixed(2) : '-';
+  bets.forEach(bet => {
+    const game = games.find(g => g.id === bet.gameId);
+    const gameTitle = game ? game.title : 'Unknown Game';
+    const teamName = bet.team === 1 ? game?.team1 : game?.team2;
+    const payout = bet.status === 'won' ? (bet.amount * bet.odds).toFixed(2) : '-';
 
-const tr = document.createElement('tr');
-tr.innerHTML = `
-<td>${gameTitle}</td>
-<td>${teamName}</td>
-<td>${bet.amount}</td>
-<td>${bet.odds}</td>
-<td>${payout}</td>
-<td><span class="status status-${bet.status}">${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}</span></td>
-`;
-betHistory.appendChild(tr);
-});
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${gameTitle}</td>
+      <td>${teamName}</td>
+      <td>${bet.amount}</td>
+      <td>${bet.odds}</td>
+      <td>${payout}</td>
+      <td><span class="status status-${bet.status}">${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}</span></td>
+    `;
+    betHistory.appendChild(tr);
+  });
 }
 
 // Show error message
 function showError(message) {
-errorMessage.textContent = message;
-errorMessage.classList.remove('hidden');
+  errorMessage.textContent = message;
+  errorMessage.classList.remove('hidden');
 }
 
 // Clear error message
 function clearError() {
-errorMessage.classList.add('hidden');
-errorMessage.textContent = '';
+  errorMessage.classList.add('hidden');
+  errorMessage.textContent = '';
 }
 
 // Show specific view
 function showView(view) {
-loginView.classList.add('hidden');
-adminView.classList.add('hidden');
-userView.classList.add('hidden');
-view.classList.remove('hidden');
+  loginView.classList.add('hidden');
+  adminView.classList.add('hidden');
+  userView.classList.add('hidden');
+  view.classList.remove('hidden');
 }
 
 // Handle login
 loginForm.addEventListener('submit', function(e) {
-e.preventDefault();
-clearError();
+  e.preventDefault();
+  clearError();
 
-const usernameVal = username.value.trim();
-const passwordVal = password.value;
+  const usernameVal = username.value.trim();
+  const passwordVal = password.value;
 
-// Check for admin
-if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
-currentUser = findUser(usernameVal);
-isAdmin = true;
-userInfo.textContent = `Admin: ${usernameVal}`;
-showView(adminView);
-displayUsers();
-displayGames();
-return;
-}
+  // Check for admin
+  if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
+    currentUser = findUser(usernameVal);
+    isAdmin = true;
+    userInfo.textContent = `Admin: ${usernameVal}`;
+    showView(adminView);
+    displayUsers();
+    displayGames();
+    return;
+  }
 
-// Check for regular user
-const user = findUser(usernameVal);
-if (user && user.password === passwordVal) {
-currentUser = user;
-isAdmin = false;
-userInfo.textContent = `User: ${usernameVal}`;
-showView(userView);
-userBalance.textContent = `BetPoints: ${user.points}`;
-displayUserGames();
-displayUserBets();
-return;
-}
+  // Check for regular user
+  const user = findUser(usernameVal);
+  if (user && user.password === passwordVal) {
+    currentUser = user;
+    isAdmin = false;
+    userInfo.textContent = `User: ${usernameVal}`;
+    showView(userView);
+    userBalance.textContent = `BetPoints: ${user.points}`;
+    displayUserGames();
+    displayUserBets();
+    return;
+  }
 
-showError('Invalid username or password.');
+  showError('Invalid username or password.');
 });
 
 // Create user
 createUserForm.addEventListener('submit', function(e) {
-e.preventDefault();
-clearError();
+  e.preventDefault();
+  clearError();
 
-const newUsernameVal = newUsername.value.trim();
-const newPasswordVal = newPassword.value;
+  const newUsernameVal = newUsername.value.trim();
+  const newPasswordVal = newPassword.value;
 
-if (addUser(newUsernameVal, newPasswordVal)) {
-newUsername.value = '';
-newPassword.value = '';
-displayUsers();
-alert('User created successfully!');
-} else {
-showError('Username already exists.');
-}
+  if (addUser(newUsernameVal, newPasswordVal)) {
+    newUsername.value = '';
+    newPassword.value = '';
+    displayUsers();
+    alert('User created successfully!');
+  } else {
+    showError('Username already exists.');
+  }
 });
 
 // Add points
 addPointsForm.addEventListener('submit', function(e) {
-e.preventDefault();
-clearError();
+  e.preventDefault();
+  clearError();
 
-const targetUserVal = targetUser.value.trim();
-const pointsAmountVal = pointsAmount.value;
+  const targetUserVal = targetUser.value.trim();
+  const pointsAmountVal = pointsAmount.value;
 
-if (addPointsToUser(targetUserVal, pointsAmountVal)) {
-targetUser.value = '';
-pointsAmount.value = '';
-displayUsers();
-alert(`Successfully added ${pointsAmountVal} BetPoints to ${targetUserVal}.`);
-} else {
-showError('User not found.');
-}
+  if (addPointsToUser(targetUserVal, pointsAmountVal)) {
+    targetUser.value = '';
+    pointsAmount.value = '';
+    displayUsers();
+    alert(`Successfully added ${pointsAmountVal} BetPoints to ${targetUserVal}.`);
+  } else {
+    showError('User not found.');
+  }
 });
 
 // Add game
 addGameForm.addEventListener('submit', function(e) {
-e.preventDefault();
-clearError();
+  e.preventDefault();
+  clearError();
 
-const title = gameTitle.value.trim();
-const t1 = team1.value.trim();
-const t2 = team2.value.trim();
-const o1 = odds1.value;
-const o2 = odds2.value;
+  const title = gameTitle.value.trim();
+  const t1 = team1.value.trim();
+  const t2 = team2.value.trim();
+  const o1 = odds1.value;
+  const o2 = odds2.value;
 
-if (createGame(title, t1, t2, o1, o2)) {
-gameTitle.value = '';
-team1.value = '';
-team2.value = '';
-odds1.value = '';
-odds2.value = '';
-displayGames();
-alert('Game added successfully!');
-// Update user view if a user is logged in
-if (currentUser && !isAdmin) {
-displayUserGames();
-}
-} else {
-showError('Error adding game.');
-}
+  if (createGame(title, t1, t2, o1, o2)) {
+    gameTitle.value = '';
+    team1.value = '';
+    team2.value = '';
+    odds1.value = '';
+    odds2.value = '';
+    displayGames();
+    alert('Game added successfully!');
+    // Update user view if a user is logged in
+    if (currentUser && !isAdmin) {
+      displayUserGames();
+    }
+  } else {
+    showError('Error adding game.');
+  }
 });
 
 // Logout handlers
 adminLogout.addEventListener('click', function() {
-currentUser = null;
-isAdmin = false;
-userInfo.textContent = 'Guest';
-username.value = '';
-password.value = '';
-clearError();
-showView(loginView);
+  currentUser = null;
+  isAdmin = false;
+  userInfo.textContent = 'Guest';
+  username.value = '';
+  password.value = '';
+  clearError();
+  showView(loginView);
 });
 
 userLogout.addEventListener('click', function() {
-currentUser = null;
-isAdmin = false;
-userInfo.textContent = 'Guest';
-username.value = '';
-password.value = '';
-clearError();
-showView(loginView);
+  currentUser = null;
+  isAdmin = false;
+  userInfo.textContent = 'Guest';
+  username.value = '';
+  password.value = '';
+  clearError();
+  showView(loginView);
 });
 
-// Initialize app
-const adminPublicIP = '84.22.38.15'; // Your public IP
+// Initialize app and auto-login admin by public IP
+initStorage();
 
 fetch('https://api.ipify.org?format=json')
   .then(res => res.json())
   .then(data => {
     const visitorIP = data.ip;
+    const adminPublicIP = '84.22.38.15'; // Replace with your public IP
 
     if (visitorIP === adminPublicIP) {
-      // Auto-login as admin
       currentUser = findUser('Odii01');
       isAdmin = true;
       userInfo.textContent = `Admin: Odii01`;
@@ -956,6 +984,5 @@ fetch('https://api.ipify.org?format=json')
   .catch(() => {
     showView(loginView);
   });
-</script>
 </body>
 </html>
