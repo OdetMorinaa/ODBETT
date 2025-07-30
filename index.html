@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OdBett</title>
+    <title>Betting Platform</title>
     <style>
         /* Global Styles */
         :root {
@@ -638,6 +638,8 @@
                 addGameForm.addEventListener('submit', handleAddGame);
                 setResultForm.addEventListener('submit', handleSetResult);
 
+
+
                 renderAll();
             }
 
@@ -666,6 +668,7 @@
                     }
                     
                     renderAll();
+                    showNotification('Login successful!', 'success');
                 } else {
                     showNotification('Invalid username or password', 'danger');
                 }
@@ -678,7 +681,6 @@
                 app.classList.add('hidden');
                 document.getElementById('username').value = '';
                 document.getElementById('password').value = '';
-                
             }
 
             // Toggle dark/light mode
