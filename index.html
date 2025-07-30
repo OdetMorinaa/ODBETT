@@ -638,14 +638,6 @@
                 addGameForm.addEventListener('submit', handleAddGame);
                 setResultForm.addEventListener('submit', handleSetResult);
 
-                // Sample data
-                if (games.length === 0) {
-                    games.push(
-                        { id: 1, team1: 'Team A', team2: 'Team B', odds1: 1.8, oddsDraw: 3.2, odds2: 2.1, status: 'upcoming' },
-                        { id: 2, team1: 'Team X', team2: 'Team Y', odds1: 2.5, odds2: 1.6, oddsDraw: 3.0, status: 'upcoming' }
-                    );
-                }
-
                 renderAll();
             }
 
