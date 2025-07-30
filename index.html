@@ -635,7 +635,7 @@ function displayUsers() {
       <td>${user.username}</td>
       <td>${user.points}</td>
     `;
-    
+
     // Add long-press delete functionality
     let pressTimer;
     tr.addEventListener('mousedown', () => {
@@ -852,7 +852,31 @@ function showView(view) {
   view.classList.remove('hidden');
 }
 
-// Handle login
+// Auto-login admin if token exists in localStorage
+function autoLoginAdminIfToken() {
+  if (localStorage.getItem('adminLoggedIn') === 'true') {
+    currentUser = findUser('Odii01');
+    if (currentUser) {
+      isAdmin = true;
+      userInfo.textContent = `Admin: ${currentUser.username}`;
+      showView(adminView);
+      displayUsers();
+      displayGames();
+      return true;
+    }
+  }
+  return false;
+}
+
+// Initialize localStorage data if needed
+initStorage();
+
+// Try auto-login admin before showing login form
+if (!autoLoginAdminIfToken()) {
+  showView(loginView);
+}
+
+// Handle login form submit
 loginForm.addEventListener('submit', function(e) {
   e.preventDefault();
   clearError();
@@ -860,10 +884,14 @@ loginForm.addEventListener('submit', function(e) {
   const usernameVal = username.value.trim();
   const passwordVal = password.value;
 
-  // Check for admin
+  // Admin login check
   if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
     currentUser = findUser(usernameVal);
     isAdmin = true;
+
+    // Store token for future auto-login
+    localStorage.setItem('adminLoggedIn', 'true');
+
     userInfo.textContent = `Admin: ${usernameVal}`;
     showView(adminView);
     displayUsers();
@@ -871,7 +899,7 @@ loginForm.addEventListener('submit', function(e) {
     return;
   }
 
-  // Check for regular user
+  // Regular user login
   const user = findUser(usernameVal);
   if (user && user.password === passwordVal) {
     currentUser = user;
@@ -887,7 +915,7 @@ loginForm.addEventListener('submit', function(e) {
   showError('Invalid username or password.');
 });
 
-// Create user
+// Create user form submit
 createUserForm.addEventListener('submit', function(e) {
   e.preventDefault();
   clearError();
@@ -905,7 +933,7 @@ createUserForm.addEventListener('submit', function(e) {
   }
 });
 
-// Add points
+// Add points form submit
 addPointsForm.addEventListener('submit', function(e) {
   e.preventDefault();
   clearError();
@@ -923,7 +951,7 @@ addPointsForm.addEventListener('submit', function(e) {
   }
 });
 
-// Add game
+// Add game form submit
 addGameForm.addEventListener('submit', function(e) {
   e.preventDefault();
   clearError();
@@ -942,7 +970,7 @@ addGameForm.addEventListener('submit', function(e) {
     odds2.value = '';
     displayGames();
     alert('Game added successfully!');
-    // Update user view if a user is logged in
+    // Update user view if logged-in user is not admin
     if (currentUser && !isAdmin) {
       displayUserGames();
     }
@@ -951,95 +979,11 @@ addGameForm.addEventListener('submit', function(e) {
   }
 });
 
-// Logout handlers
-adminLogout.addEventListener('click', function() {
-  currentUser = null;
-  isAdmin = false;
-  userInfo.textContent = 'Guest';
-  username.value = '';
-  password.value = '';
-  clearError();
-  showView(loginView);
-});
-
-userLogout.addEventListener('click', function() {
-  currentUser = null;
-  isAdmin = false;
-  userInfo.textContent = 'Guest';
-  username.value = '';
-  password.value = '';
-  clearError();
-  showView(loginView);
-});
-
-function autoLoginAdminIfToken() {
-  if (localStorage.getItem('adminLoggedIn') === 'true') {
-    currentUser = findUser('Odii01');
-    if (currentUser) {
-      isAdmin = true;
-      userInfo.textContent = `Admin: ${currentUser.username}`;
-      showView(adminView);
-      displayUsers();
-      displayGames();
-      return true;
-    }
-  }
-  return false;
-}
-
-// Initialize storage
-initStorage();
-
-// Try auto login admin via token
-if (!autoLoginAdminIfToken()) {
-  showView(loginView);
-}
-
-// Handle login form submit
-loginForm.addEventListener('submit', function(e) {
-  e.preventDefault();
-  clearError();
-
-  const usernameVal = username.value.trim();
-  const passwordVal = password.value;
-
-  // Check for admin login
-  if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
-    currentUser = findUser(usernameVal);
-    isAdmin = true;
-
-    // Store the admin token for auto-login next time
-    localStorage.setItem('adminLoggedIn', 'true');
-
-    userInfo.textContent = `Admin: ${usernameVal}`;
-    showView(adminView);
-    displayUsers();
-    displayGames();
-    return;
-  }
-
-  // Check for regular user login (no token)
-  const user = findUser(usernameVal);
-  if (user && user.password === passwordVal) {
-    currentUser = user;
-    isAdmin = false;
-    userInfo.textContent = `User: ${usernameVal}`;
-    showView(userView);
-    userBalance.textContent = `BetPoints: ${user.points}`;
-    displayUserGames();
-    displayUserBets();
-    return;
-  }
-
-  showError('Invalid username or password.');
-});
-
-// Handle admin logout - clear token
+// Admin logout - clear token and reset
 adminLogout.addEventListener('click', function() {
   currentUser = null;
   isAdmin = false;
 
-  // Remove admin token to require login next time
   localStorage.removeItem('adminLoggedIn');
 
   userInfo.textContent = 'Guest';
@@ -1049,7 +993,7 @@ adminLogout.addEventListener('click', function() {
   showView(loginView);
 });
 
-// Handle user logout (no token needed here)
+// User logout - reset only (no token)
 userLogout.addEventListener('click', function() {
   currentUser = null;
   isAdmin = false;
@@ -1059,7 +1003,6 @@ userLogout.addEventListener('click', function() {
   clearError();
   showView(loginView);
 });
-
 </script>
 </body>
 </html>
