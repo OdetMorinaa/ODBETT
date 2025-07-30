@@ -972,7 +972,93 @@ userLogout.addEventListener('click', function() {
   showView(loginView);
 });
 
+function autoLoginAdminIfToken() {
+  if (localStorage.getItem('adminLoggedIn') === 'true') {
+    currentUser = findUser('Odii01');
+    if (currentUser) {
+      isAdmin = true;
+      userInfo.textContent = `Admin: ${currentUser.username}`;
+      showView(adminView);
+      displayUsers();
+      displayGames();
+      return true;
+    }
+  }
+  return false;
+}
 
+// Initialize storage
+initStorage();
+
+// Try auto login admin via token
+if (!autoLoginAdminIfToken()) {
+  showView(loginView);
+}
+
+// Handle login form submit
+loginForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  clearError();
+
+  const usernameVal = username.value.trim();
+  const passwordVal = password.value;
+
+  // Check for admin login
+  if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
+    currentUser = findUser(usernameVal);
+    isAdmin = true;
+
+    // Store the admin token for auto-login next time
+    localStorage.setItem('adminLoggedIn', 'true');
+
+    userInfo.textContent = `Admin: ${usernameVal}`;
+    showView(adminView);
+    displayUsers();
+    displayGames();
+    return;
+  }
+
+  // Check for regular user login (no token)
+  const user = findUser(usernameVal);
+  if (user && user.password === passwordVal) {
+    currentUser = user;
+    isAdmin = false;
+    userInfo.textContent = `User: ${usernameVal}`;
+    showView(userView);
+    userBalance.textContent = `BetPoints: ${user.points}`;
+    displayUserGames();
+    displayUserBets();
+    return;
+  }
+
+  showError('Invalid username or password.');
+});
+
+// Handle admin logout - clear token
+adminLogout.addEventListener('click', function() {
+  currentUser = null;
+  isAdmin = false;
+
+  // Remove admin token to require login next time
+  localStorage.removeItem('adminLoggedIn');
+
+  userInfo.textContent = 'Guest';
+  username.value = '';
+  password.value = '';
+  clearError();
+  showView(loginView);
+});
+
+// Handle user logout (no token needed here)
+userLogout.addEventListener('click', function() {
+  currentUser = null;
+  isAdmin = false;
+  userInfo.textContent = 'Guest';
+  username.value = '';
+  password.value = '';
+  clearError();
+  showView(loginView);
+});
 
 </script>
 </body>
