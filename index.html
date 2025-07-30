@@ -561,11 +561,21 @@ function placeBet(username, gameId, team, amount, odds) {
   const user = findUser(username);
   if (!user || user.points < amount) return false;
 
+  const bets = getBets();
+
+  // ❌ Prevent betting on both teams of the same game
+  const existingBet = bets.find(
+    bet => bet.username === username && bet.gameId === gameId
+  );
+  if (existingBet) {
+    alert('You have already placed a bet on this game.');
+    return false;
+  }
+
   // Deduct points
   user.points -= amount;
   updateUser(user);
 
-  const bets = getBets();
   const newBet = {
     id: Date.now().toString(),
     username: username,
@@ -573,7 +583,7 @@ function placeBet(username, gameId, team, amount, odds) {
     team: team,
     amount: amount,
     odds: odds,
-    status: 'pending' // pending, won, lost
+    status: 'pending'
   };
   bets.push(newBet);
   saveBets(bets);
