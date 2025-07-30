@@ -615,10 +615,10 @@ usersList.innerHTML = '';
 
 users.forEach(user => {
 const tr = document.createElement('tr');
-tr.innerHTML = 
+tr.innerHTML = `
 <td>${user.username}</td>
 <td>${user.points}</td>
-;
+`;
 usersList.appendChild(tr);
 });
 }
@@ -638,10 +638,10 @@ const gameCard = document.createElement('div');
 gameCard.className = 'card';
 
 let resultText = 'Pending';
-if (game.result === 1) resultText = ${game.team1} won;
-if (game.result === 2) resultText = ${game.team2} won;
+if (game.result === 1) resultText = `${game.team1} won`;
+if (game.result === 2) resultText = `${game.team2} won`;
 
-gameCard.innerHTML = 
+gameCard.innerHTML = `
 <div class="card-header">
 <strong>${game.title}</strong>
 <span>Status: ${resultText}</span>
@@ -650,20 +650,20 @@ gameCard.innerHTML =
 <strong>${game.team1}</strong> (${game.odds1}) vs
 <strong>${game.team2}</strong> (${game.odds2})
 </div>
-;
+`;
 
 // Add resolution buttons if game is pending
 if (game.result === null) {
 const resolveDiv = document.createElement('div');
 resolveDiv.style.marginTop = '10px';
-resolveDiv.innerHTML = 
+resolveDiv.innerHTML = `
 <button class="bet-button" data-game="${game.id}" data-winner="1">
 ${game.team1} wins
 </button>
 <button class="bet-button" data-game="${game.id}" data-winner="2">
 ${game.team2} wins
 </button>
-;
+`;
 gameCard.appendChild(resolveDiv);
 
 // Add event listeners
@@ -672,7 +672,7 @@ btn.addEventListener('click', () => {
 const gameId = btn.getAttribute('data-game');
 const winner = parseInt(btn.getAttribute('data-winner'));
 if (resolveGame(gameId, winner)) {
-alert(Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!);
+alert(`Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!`);
 displayGames();
 if (currentUser) displayUserBets();
 }
@@ -700,7 +700,7 @@ if (game.result !== null) return; // Skip resolved games
 const gameCard = document.createElement('div');
 gameCard.className = 'card';
 
-gameCard.innerHTML = 
+gameCard.innerHTML = `
 <div class="card-header">
 <strong>${game.title}</strong>
 </div>
@@ -716,7 +716,7 @@ ${game.team2} (${game.odds2})
 <input type="number" class="bet-amount" placeholder="Amount" min="1" value="10" required />
 <button type="submit" class="btn" data-game="${game.id}">Place Bet</button>
 </form>
-;
+`;
 
 // Add event listeners for bet buttons
 const betButtons = gameCard.querySelectorAll('.bet-button');
@@ -748,9 +748,9 @@ return;
 }
 
 if (placeBet(currentUser.username, gameId, team, amount, odds)) {
-alert(Bet placed successfully! ${amount} BetPoints on team.);
+alert(`Bet placed successfully! ${amount} BetPoints on team.`);
 amountInput.value = '10';
-userBalance.textContent = BetPoints: ${currentUser.points};
+userBalance.textContent = `BetPoints: ${currentUser.points}`;
 displayUserBets();
 } else {
 alert('Insufficient BetPoints or invalid bet.');
@@ -781,14 +781,14 @@ const teamName = bet.team === 1 ? game?.team1 : game?.team2;
 const payout = bet.status === 'won' ? (bet.amount * bet.odds).toFixed(2) : '-';
 
 const tr = document.createElement('tr');
-tr.innerHTML = 
+tr.innerHTML = `
 <td>${gameTitle}</td>
 <td>${teamName}</td>
 <td>${bet.amount}</td>
 <td>${bet.odds}</td>
 <td>${payout}</td>
 <td><span class="status status-${bet.status}">${bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}</span></td>
-;
+`;
 betHistory.appendChild(tr);
 });
 }
@@ -825,7 +825,7 @@ const passwordVal = password.value;
 if (usernameVal === 'Odii01' && passwordVal === 'Odi049') {
 currentUser = findUser(usernameVal);
 isAdmin = true;
-userInfo.textContent = Admin: ${usernameVal};
+userInfo.textContent = `Admin: ${usernameVal}`;
 showView(adminView);
 displayUsers();
 displayGames();
@@ -837,9 +837,9 @@ const user = findUser(usernameVal);
 if (user && user.password === passwordVal) {
 currentUser = user;
 isAdmin = false;
-userInfo.textContent = User: ${usernameVal};
+userInfo.textContent = `User: ${usernameVal}`;
 showView(userView);
-userBalance.textContent = BetPoints: ${user.points};
+userBalance.textContent = `BetPoints: ${user.points}`;
 displayUserGames();
 displayUserBets();
 return;
@@ -878,7 +878,7 @@ if (addPointsToUser(targetUserVal, pointsAmountVal)) {
 targetUser.value = '';
 pointsAmount.value = '';
 displayUsers();
-alert(Successfully added ${pointsAmountVal} BetPoints to ${targetUserVal}.);
+alert(`Successfully added ${pointsAmountVal} BetPoints to ${targetUserVal}.`);
 } else {
 showError('User not found.');
 }
