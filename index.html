@@ -402,7 +402,7 @@ color: white;
 
 <button id="userLogout" class="btn-danger" style="width: 100%;">Log Out</button>
 </div>
-
+<script>
 // DOM Elements
 const loginView = document.getElementById('loginView');
 const adminView = document.getElementById('adminView');
@@ -984,5 +984,6 @@ fetch('https://api.ipify.org?format=json')
   .catch(() => {
     showView(loginView);
   });
+</script>
 </body>
 </html>
