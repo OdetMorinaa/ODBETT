@@ -975,22 +975,19 @@ userLogout.addEventListener('click', function() {
 // Initialize app and auto-login admin by public IP
 initStorage();
 
-fetch('https://api.ipify.org?format=json')
-  .then(res => res.json())
-  .then(data => {
-    const visitorIP = data.ip;
-    const adminPublicIP = '	84.22.38.44'; // Replace with your public IP
+const adminToken = localStorage.getItem('adminDeviceToken');
+const expectedAdminToken = 'super-secret-admin-code-459';
 
-    if (visitorIP === adminPublicIP) {
-      currentUser = findUser('Odii01');
-      isAdmin = true;
-      userInfo.textContent = `Admin: Odii01`;
-      showView(adminView);
-      displayUsers();
-      displayGames();
-    } else {
-      showView(loginView);
-    }
+if (adminToken === expectedAdminToken) {
+  currentUser = findUser('Odii01');
+  isAdmin = true;
+  userInfo.textContent = `Admin: Odii01`;
+  showView(adminView);
+  displayUsers();
+  displayGames();
+} else {
+  showView(loginView);
+}
   })
   .catch(() => {
     showView(loginView);
