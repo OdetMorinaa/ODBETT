@@ -488,7 +488,7 @@ function updateUser(user) {
 function addUser(username, password) {
   if (findUser(username)) return false;
   const users = getUsers();
-  users.push({ username, password, points: 100 });
+  users.push({ username, password, points: 0 });
   saveUsers(users);
   return true;
 }
