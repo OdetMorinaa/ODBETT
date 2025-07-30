@@ -979,30 +979,21 @@ addGameForm.addEventListener('submit', function(e) {
   }
 });
 
-// Admin logout - clear token and reset
-adminLogout.addEventListener('click', function() {
-  currentUser = null;
-  isAdmin = false;
+// Replace this with your server’s URL
+const API = 'http://localhost:3001/api';
 
-  localStorage.removeItem('adminLoggedIn');
+// Login example
+async function login(username, password) {
+  const res = await fetch(`${API}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  return data;
+}
 
-  userInfo.textContent = 'Guest';
-  username.value = '';
-  password.value = '';
-  clearError();
-  showView(loginView);
-});
-
-// User logout - reset only (no token)
-userLogout.addEventListener('click', function() {
-  currentUser = null;
-  isAdmin = false;
-  userInfo.textContent = 'Guest';
-  username.value = '';
-  password.value = '';
-  clearError();
-  showView(loginView);
-});
 </script>
+<script src="server.js"></script>
 </body>
 </html>
