@@ -402,7 +402,6 @@ color: white;
 
 <button id="userLogout" class="btn-danger" style="width: 100%;">Log Out</button>
 </div>
-
 <script>
 // DOM Elements
 const loginView = document.getElementById('loginView');
@@ -441,418 +440,432 @@ const odds2 = document.getElementById('odds2');
 let currentUser = null;
 let isAdmin = false;
 
-// Initialize localStorage if empty
-function initStorage() {
-  if (!localStorage.getItem('users')) {
-    // Create admin user
-    const adminUser = {
-      username: 'Odii01',
-      password: 'Odi049',
-      points: 1000
-    };
-    localStorage.setItem('users', JSON.stringify([adminUser]));
-  }
-  if (!localStorage.getItem('games')) {
-    localStorage.setItem('games', JSON.stringify([]));
-  }
-  if (!localStorage.getItem('bets')) {
-    localStorage.setItem('bets', JSON.stringify([]));
-  }
+// ------------------- API Helper Functions --------------------
+
+// Fetch all users
+async function getUsers() {
+  const res = await fetch('/api/users');
+  if (!res.ok) throw new Error('Failed to fetch users');
+  return await res.json();
 }
 
-// Get data from localStorage
-function getUsers() {
-  return JSON.parse(localStorage.getItem('users')) || [];
+// Fetch all games
+async function getGames() {
+  const res = await fetch('/api/games');
+  if (!res.ok) throw new Error('Failed to fetch games');
+  return await res.json();
 }
 
-function getGames() {
-  return JSON.parse(localStorage.getItem('games')) || [];
+// Fetch all bets
+async function getBets() {
+  const res = await fetch('/api/bets');
+  if (!res.ok) throw new Error('Failed to fetch bets');
+  return await res.json();
 }
 
-function getBets() {
-  return JSON.parse(localStorage.getItem('bets')) || [];
-}
-
-// Save data to localStorage
-function saveUsers(users) {
-  localStorage.setItem('users', JSON.stringify(users));
-}
-
-function saveGames(games) {
-  localStorage.setItem('games', JSON.stringify(games));
-}
-
-function saveBets(bets) {
-  localStorage.setItem('bets', JSON.stringify(bets));
-}
-
-// Find user by username
-function findUser(username) {
-  const users = getUsers();
-  return users.find(user => user.username === username);
-}
-
-// Update user
-function updateUser(user) {
-  const users = getUsers();
-  const index = users.findIndex(u => u.username === user.username);
-  if (index !== -1) {
-    users[index] = user;
-    saveUsers(users);
-    return true;
-  }
-  return false;
+// Save updated users - in this model, use PUT for single user update
+async function updateUser(user) {
+  const res = await fetch(`/api/users/${encodeURIComponent(user.username)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user),
+  });
+  return res.ok;
 }
 
 // Add new user
-function addUser(username, password) {
-  if (findUser(username)) return false;
-
-  const newUser = {
-    username: username,
-    password: password,
-    points: 0 // Starting balance
-  };
-
-  const users = getUsers();
-  users.push(newUser);
-  saveUsers(users);
-  return true;
+async function addUser(username, password) {
+  const res = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, points: 0 }),
+  });
+  if (res.ok) return true;
+  if (res.status === 409) return false; // Conflict - user exists
+  throw new Error('Failed to add user');
 }
 
 // Add points to user
-function addPointsToUser(username, amount) {
-  const user = findUser(username);
-  if (user) {
-    user.points += parseInt(amount);
-    updateUser(user);
-    return true;
+async function addPointsToUser(username, amount) {
+  try {
+    const users = await getUsers();
+    const user = users.find(u => u.username === username);
+    if (!user) return false;
+    user.points += parseInt(amount, 10);
+    return await updateUser(user);
+  } catch {
+    return false;
   }
-  return false;
 }
 
 // Create new game
-function createGame(title, team1, team2, odds1, odds2) {
-  const games = getGames();
-  const newGame = {
-    id: Date.now().toString(),
-    title: title,
-    team1: team1,
-    team2: team2,
-    odds1: parseFloat(odds1),
-    odds2: parseFloat(odds2),
-    result: null // null = pending, 1 or 2 = winner
-  };
-  games.push(newGame);
-  saveGames(games);
-  return newGame;
+async function createGame(title, team1, team2, odds1, odds2) {
+  const res = await fetch('/api/games', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title,
+      team1,
+      team2,
+      odds1: parseFloat(odds1),
+      odds2: parseFloat(odds2),
+      result: null,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to create game');
+  return await res.json();
+}
+
+// Delete user
+async function deleteUser(username) {
+  const res = await fetch(`/api/users/${encodeURIComponent(username)}`, {
+    method: 'DELETE',
+  });
+  return res.ok;
+}
+
+// Delete game
+async function deleteGame(gameId) {
+  const res = await fetch(`/api/games/${gameId}`, { method: 'DELETE' });
+  return res.ok;
 }
 
 // Place a bet
-function placeBet(username, gameId, team, amount, odds) {
-  const user = findUser(username);
-  if (!user || user.points < amount) return false;
+async function placeBet(username, gameId, team, amount, odds) {
+  try {
+    const users = await getUsers();
+    const user = users.find(u => u.username === username);
+    if (!user || user.points < amount) return false;
 
-  // Deduct points
-  user.points -= amount;
-  updateUser(user);
+    // Deduct points locally first
+    user.points -= amount;
+    const userUpdated = await updateUser(user);
+    if (!userUpdated) return false;
 
-  const bets = getBets();
-  const newBet = {
-    id: Date.now().toString(),
-    username: username,
-    gameId: gameId,
-    team: team,
-    amount: amount,
-    odds: odds,
-    status: 'pending' // pending, won, lost
-  };
-  bets.push(newBet);
-  saveBets(bets);
-  return true;
-}
-
-// Resolve game - declare winner
-function resolveGame(gameId, winner) {
-  const games = getGames();
-  const gameIndex = games.findIndex(g => g.id === gameId);
-  if (gameIndex === -1 || games[gameIndex].result !== null) return false;
-
-  games[gameIndex].result = winner;
-  saveGames(games);
-
-  // Update bets
-  const bets = getBets();
-  const winningBets = bets.filter(bet => bet.gameId === gameId && bet.team === winner);
-
-  winningBets.forEach(bet => {
-    const user = findUser(bet.username);
-    if (user) {
-      const winnings = bet.amount * bet.odds;
-      user.points += winnings;
-      updateUser(user);
-    }
-    bet.status = 'won';
-  });
-
-  // Mark other bets as lost
-  bets
-    .filter(bet => bet.gameId === gameId && bet.team !== winner && bet.status === 'pending')
-    .forEach(bet => {
-      bet.status = 'lost';
+    // Create bet
+    const res = await fetch('/api/bets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        gameId,
+        team,
+        amount,
+        odds,
+        status: 'pending',
+      }),
     });
-
-  saveBets(bets);
-  return true;
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
+
+// Resolve game
+async function resolveGame(gameId, winner) {
+  try {
+    // Fetch games & bets
+    const games = await getGames();
+    const gameIndex = games.findIndex(g => g.id === gameId);
+    if (gameIndex === -1 || games[gameIndex].result !== null) return false;
+
+    // Update game result
+    games[gameIndex].result = winner;
+
+    // Update game on server
+    const resGameUpdate = await fetch(`/api/games/${gameId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(games[gameIndex]),
+    });
+    if (!resGameUpdate.ok) return false;
+
+    const bets = await getBets();
+
+    // Update bets status
+    for (const bet of bets) {
+      if (bet.gameId === gameId) {
+        if (bet.team === winner && bet.status === 'pending') {
+          bet.status = 'won';
+          // Update user points for winnings
+          const users = await getUsers();
+          const user = users.find(u => u.username === bet.username);
+          if (user) {
+            user.points += bet.amount * bet.odds;
+            await updateUser(user);
+          }
+        } else if (bet.status === 'pending') {
+          bet.status = 'lost';
+        }
+
+        // Update each bet on server (assuming endpoint exists)
+        await fetch(`/api/bets/${bet.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bet),
+        });
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ------------------- UI Display & Logic --------------------
 
 // Display all users in admin panel
-function displayUsers() {
-  const users = getUsers();
-  usersList.innerHTML = '';
+async function displayUsers() {
+  try {
+    const users = await getUsers();
+    usersList.innerHTML = '';
 
-  users.forEach(user => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = 
-      `<td>${user.username}</td>
-      <td>${user.points}</td>
-      <td>
-        ${user.username === 'Odii01' ? '' : `<button class="delete-user-btn" data-username="${user.username}">Delete</button>`}
-      </td>`;
-    usersList.appendChild(tr);
-  });
-
-  // Add event listeners for delete buttons
-  const deleteButtons = document.querySelectorAll('.delete-user-btn');
-  deleteButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const usernameToDelete = button.getAttribute('data-username');
-      if (confirm(`Are you sure you want to delete user "${usernameToDelete}"?`)) {
-        deleteUser(usernameToDelete);
-        displayUsers();
-        populateUserDropdown(); // Refresh dropdown in add points form
-      }
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        `<td>${user.username}</td>
+        <td>${user.points}</td>
+        <td>${user.username === 'Odii01' ? '' : `<button class="delete-user-btn" data-username="${user.username}">Delete</button>`}</td>`;
+      usersList.appendChild(tr);
     });
-  });
-}
 
-// Delete user function
-function deleteUser(username) {
-  let users = getUsers();
-  users = users.filter(user => user.username !== username);
-  saveUsers(users);
-
-  // Also remove any bets of the deleted user
-  let bets = getBets();
-  bets = bets.filter(bet => bet.username !== username);
-  saveBets(bets);
-
-  // If deleted user is current user, log out (optional)
-  if (currentUser && currentUser.username === username) {
-    currentUser = null;
-    isAdmin = false;
-    adminView.classList.add('hidden');
-    loginView.classList.remove('hidden');
-  }
-}
-
-// Delete game function
-function deleteGame(gameId) {
-  let games = getGames();
-  games = games.filter(game => game.id !== gameId);
-  saveGames(games);
-
-  // Also remove bets related to this game
-  let bets = getBets();
-  bets = bets.filter(bet => bet.gameId !== gameId);
-  saveBets(bets);
-
-  // Refresh the games display
-  displayGames();
-  if (currentUser) displayUserBets();
-}
-
-// Display all games in admin panel with resolution controls and delete button
-function displayGames() {
-  const games = getGames();
-  gamesList.innerHTML = '';
-
-  if (games.length === 0) {
-    gamesList.innerHTML = '<p>No games available.</p>';
-    return;
-  }
-
-  games.forEach(game => {
-    const gameCard = document.createElement('div');
-    gameCard.className = 'card';
-
-    let resultText = 'Pending';
-    if (game.result === 1) resultText = `${game.team1} won`;
-    if (game.result === 2) resultText = `${game.team2} won`;
-
-    gameCard.innerHTML = 
-      `<div class="card-header">
-        <strong>${game.title}</strong>
-        <span>Status: ${resultText}</span>
-      </div>
-      <div>
-        <strong>${game.team1}</strong> (${game.odds1}) vs
-        <strong>${game.team2}</strong> (${game.odds2})
-      </div>`;
-
-    // Add resolution buttons if game is pending
-    if (game.result === null) {
-      const resolveDiv = document.createElement('div');
-      resolveDiv.style.marginTop = '10px';
-      resolveDiv.innerHTML = 
-        `<button class="bet-button" data-game="${game.id}" data-winner="1">
-          ${game.team1} wins
-        </button>
-        <button class="bet-button" data-game="${game.id}" data-winner="2">
-          ${game.team2} wins
-        </button>`;
-      gameCard.appendChild(resolveDiv);
-
-      // Add event listeners for resolve buttons
-      resolveDiv.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const gameId = btn.getAttribute('data-game');
-          const winner = parseInt(btn.getAttribute('data-winner'));
-          if (resolveGame(gameId, winner)) {
-            alert(`Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!`);
-            displayGames();
-            if (currentUser) displayUserBets();
-          }
-        });
+    // Add event listeners for delete buttons
+    const deleteButtons = document.querySelectorAll('.delete-user-btn');
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        const usernameToDelete = button.getAttribute('data-username');
+        if (confirm(`Are you sure you want to delete user "${usernameToDelete}"?`)) {
+          await deleteUser(usernameToDelete);
+          await displayUsers();
+          await populateUserDropdown(); // Refresh dropdown in add points form
+        }
       });
+    });
+  } catch (err) {
+    alert('Failed to load users.');
+  }
+}
+
+// Display all games in admin panel with resolution and delete controls
+async function displayGames() {
+  try {
+    const games = await getGames();
+    gamesList.innerHTML = '';
+
+    if (games.length === 0) {
+      gamesList.innerHTML = '<p>No games available.</p>';
+      return;
     }
 
-    // Add delete button
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete Game';
-    deleteBtn.style.marginTop = '10px';
-    deleteBtn.addEventListener('click', () => {
-      if (confirm(`Are you sure you want to delete the game "${game.title}"?`)) {
-        deleteGame(game.id);
-      }
-    });
-    gameCard.appendChild(deleteBtn);
+    games.forEach(game => {
+      const gameCard = document.createElement('div');
+      gameCard.className = 'card';
 
-    gamesList.appendChild(gameCard);
-  });
+      let resultText = 'Pending';
+      if (game.result === 1) resultText = `${game.team1} won`;
+      if (game.result === 2) resultText = `${game.team2} won`;
+
+      gameCard.innerHTML =
+        `<div class="card-header">
+          <strong>${game.title}</strong>
+          <span>Status: ${resultText}</span>
+        </div>
+        <div>
+          <strong>${game.team1}</strong> (${game.odds1}) vs
+          <strong>${game.team2}</strong> (${game.odds2})
+        </div>`;
+
+      // Add resolution buttons if pending
+      if (game.result === null) {
+        const resolveDiv = document.createElement('div');
+        resolveDiv.style.marginTop = '10px';
+        resolveDiv.innerHTML =
+          `<button class="bet-button" data-game="${game.id}" data-winner="1">${game.team1} wins</button>
+          <button class="bet-button" data-game="${game.id}" data-winner="2">${game.team2} wins</button>`;
+        gameCard.appendChild(resolveDiv);
+
+        resolveDiv.querySelectorAll('button').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const gameId = btn.getAttribute('data-game');
+            const winner = parseInt(btn.getAttribute('data-winner'));
+            if (await resolveGame(gameId, winner)) {
+              alert(`Game resolved: ${winner === 1 ? game.team1 : game.team2} wins!`);
+              await displayGames();
+              if (currentUser) await displayUserBets();
+            } else {
+              alert('Failed to resolve game.');
+            }
+          });
+        });
+      }
+
+      // Delete game button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete Game';
+      deleteBtn.style.marginTop = '10px';
+      deleteBtn.addEventListener('click', async () => {
+        if (confirm(`Are you sure you want to delete the game "${game.title}"?`)) {
+          if (await deleteGame(game.id)) {
+            await displayGames();
+            if (currentUser) await displayUserBets();
+          } else {
+            alert('Failed to delete game.');
+          }
+        }
+      });
+      gameCard.appendChild(deleteBtn);
+
+      gamesList.appendChild(gameCard);
+    });
+  } catch {
+    gamesList.innerHTML = '<p>Error loading games.</p>';
+  }
 }
 
 // Display games for user betting
-function displayUserGames() {
-  const games = getGames();
-  userGamesList.innerHTML = '';
+async function displayUserGames() {
+  try {
+    const games = await getGames();
+    userGamesList.innerHTML = '';
 
-  if (games.length === 0) {
-    userGamesList.innerHTML = '<p>No games available for betting.</p>';
-    return;
-  }
+    if (games.length === 0) {
+      userGamesList.innerHTML = '<p>No games available for betting.</p>';
+      return;
+    }
 
-  games.forEach(game => {
-    if (game.result !== null) return; // Skip resolved games
+    games.forEach(game => {
+      if (game.result !== null) return; // Skip resolved games
 
-    const gameCard = document.createElement('div');
-    gameCard.className = 'card';
+      const gameCard = document.createElement('div');
+      gameCard.className = 'card';
 
-    gameCard.innerHTML = 
-      `<div class="card-header">
-        <strong>${game.title}</strong>
-      </div>
-      <div style="margin: 10px 0;">
-        <button class="bet-button" data-game="${game.id}" data-team="1" data-odds="${game.odds1}">
-          ${game.team1} (${game.odds1})
-        </button>
-        <button class="bet-button" data-game="${game.id}" data-team="2" data-odds="${game.odds2}">
-          ${game.team2} (${game.odds2})
-        </button>
-      </div>`;
+      gameCard.innerHTML =
+        `<div class="card-header">
+          <strong>${game.title}</strong>
+        </div>
+        <div style="margin: 10px 0;">
+          <button class="bet-button" data-game="${game.id}" data-team="1" data-odds="${game.odds1}">
+            ${game.team1} (${game.odds1})
+          </button>
+          <button class="bet-button" data-game="${game.id}" data-team="2" data-odds="${game.odds2}">
+            ${game.team2} (${game.odds2})
+          </button>
+        </div>`;
 
-    userGamesList.appendChild(gameCard);
-  });
-
-  // Add event listeners for placing bets
-  const betButtons = userGamesList.querySelectorAll('.bet-button');
-  betButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const gameId = btn.getAttribute('data-game');
-      const team = parseInt(btn.getAttribute('data-team'));
-      const odds = parseFloat(btn.getAttribute('data-odds'));
-      const amountStr = prompt('Enter bet amount:');
-      const amount = parseInt(amountStr);
-
-      if (isNaN(amount) || amount <= 0) {
-        alert('Invalid bet amount.');
-        return;
-      }
-      if (currentUser.points < amount) {
-        alert('Insufficient points.');
-        return;
-      }
-
-      if (placeBet(currentUser.username, gameId, team, amount, odds)) {
-        alert('Bet placed successfully!');
-        updateUserInfo();
-        displayUserBets();
-      } else {
-        alert('Failed to place bet.');
-      }
+      userGamesList.appendChild(gameCard);
     });
-  });
+
+    // Add event listeners for placing bets
+    const betButtons = userGamesList.querySelectorAll('.bet-button');
+    betButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const gameId = btn.getAttribute('data-game');
+        const team = parseInt(btn.getAttribute('data-team'));
+        const odds = parseFloat(btn.getAttribute('data-odds'));
+        const amountStr = prompt('Enter bet amount:');
+        const amount = parseInt(amountStr);
+
+        if (isNaN(amount) || amount <= 0) {
+          alert('Invalid bet amount.');
+          return;
+        }
+        if (currentUser.points < amount) {
+          alert('Insufficient points.');
+          return;
+        }
+
+        if (await placeBet(currentUser.username, gameId, team, amount, odds)) {
+          alert('Bet placed successfully!');
+          await refreshCurrentUser();
+          updateUserInfo();
+          await displayUserBets();
+        } else {
+          alert('Failed to place bet.');
+        }
+      });
+    });
+  } catch {
+    userGamesList.innerHTML = '<p>Error loading games.</p>';
+  }
 }
 
 // Display bets of current user
-function displayUserBets() {
-  const bets = getBets();
-  const games = getGames();
-  betHistory.innerHTML = '';
+async function displayUserBets() {
+  try {
+    const bets = await getBets();
+    const games = await getGames();
+    betHistory.innerHTML = '';
 
-  const userBets = bets.filter(bet => bet.username === currentUser.username);
-  if (userBets.length === 0) {
-    betHistory.innerHTML = '<p>No bets placed yet.</p>';
-    return;
+    const userBets = bets.filter(bet => bet.username === currentUser.username);
+    if (userBets.length === 0) {
+      betHistory.innerHTML = '<p>No bets placed yet.</p>';
+      return;
+    }
+
+    userBets.forEach(bet => {
+      const game = games.find(g => g.id === bet.gameId);
+      if (!game) return;
+
+      const betDiv = document.createElement('div');
+      betDiv.className = 'card';
+      let statusText = 'Pending';
+      if (bet.status === 'won') statusText = 'Won 🎉';
+      else if (bet.status === 'lost') statusText = 'Lost ❌';
+
+      const teamName = bet.team === 1 ? game.team1 : game.team2;
+
+      betDiv.innerHTML =
+        `<strong>${game.title}</strong><br>
+        Bet on: ${teamName} <br>
+        Amount: ${bet.amount} points<br>
+        Odds: ${bet.odds}<br>
+        Status: ${statusText}`;
+
+      betHistory.appendChild(betDiv);
+    });
+  } catch {
+    betHistory.innerHTML = '<p>Error loading bets.</p>';
   }
+}
 
-  userBets.forEach(bet => {
-    const game = games.find(g => g.id === bet.gameId);
-    if (!game) return;
-
-    const teamName = bet.team === 1 ? game.team1 : game.team2;
-    const status = bet.status.charAt(0).toUpperCase() + bet.status.slice(1);
-
-    const betDiv = document.createElement('div');
-    betDiv.textContent = `Game: ${game.title} - Bet on: ${teamName} - Amount: ${bet.amount} - Odds: ${bet.odds} - Status: ${status}`;
-    betHistory.appendChild(betDiv);
-  });
+// Refresh current user data from server
+async function refreshCurrentUser() {
+  try {
+    const users = await getUsers();
+    currentUser = users.find(u => u.username === currentUser.username);
+  } catch {
+    // fail silently
+  }
 }
 
 // Update user info display
 function updateUserInfo() {
   userInfo.textContent = `Logged in as: ${currentUser.username}`;
-  userBalance.textContent = `Points: ${currentUser.points}`;
+  userBalance.textContent = `Balance: ${currentUser.points} points`;
 }
 
-// Populate user dropdown for adding points
-function populateUserDropdown() {
-  const users = getUsers();
-  targetUser.innerHTML = '';
-  users.forEach(user => {
-    if (user.username !== 'Odii01') {
-      const option = document.createElement('option');
-      option.value = user.username;
-      option.textContent = user.username;
-      targetUser.appendChild(option);
-    }
-  });
+// Populate user dropdown for admin add points form
+async function populateUserDropdown() {
+  try {
+    const users = await getUsers();
+    targetUser.innerHTML = '';
+    users.forEach(user => {
+      const opt = document.createElement('option');
+      opt.value = user.username;
+      opt.textContent = user.username;
+      targetUser.appendChild(opt);
+    });
+  } catch {
+    // do nothing
+  }
 }
 
-// Login handler
-loginForm.addEventListener('submit', e => {
+// ------------------- Event Handlers --------------------
+
+loginForm.addEventListener('submit', async e => {
   e.preventDefault();
   errorMessage.textContent = '';
+
   const uname = username.value.trim();
   const pwd = password.value;
 
@@ -861,129 +874,140 @@ loginForm.addEventListener('submit', e => {
     return;
   }
 
-  const user = findUser(uname);
-  if (!user || user.password !== pwd) {
-    errorMessage.textContent = 'Invalid username or password.';
+  try {
+    const users = await getUsers();
+    const user = users.find(u => u.username === uname);
+
+    if (!user || user.password !== pwd) {
+      errorMessage.textContent = 'Invalid username or password.';
+      return;
+    }
+
+    currentUser = user;
+    isAdmin = uname === 'Odii01';
+
+    if (isAdmin) {
+      loginView.classList.add('hidden');
+      adminView.classList.remove('hidden');
+      await displayUsers();
+      await displayGames();
+      await populateUserDropdown();
+    } else {
+      loginView.classList.add('hidden');
+      userView.classList.remove('hidden');
+      updateUserInfo();
+      await displayUserGames();
+      await displayUserBets();
+    }
+
+    username.value = '';
+    password.value = '';
+  } catch {
+    errorMessage.textContent = 'Error communicating with server.';
+  }
+});
+
+createUserForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  errorMessage.textContent = '';
+
+  const uname = newUsername.value.trim();
+  const pwd = newPassword.value;
+
+  if (!uname || !pwd) {
+    errorMessage.textContent = 'Please enter username and password.';
     return;
   }
 
-  currentUser = user;
-  isAdmin = (uname === 'Odii01');
-
-  if (isAdmin) {
-    loginView.classList.add('hidden');
-    adminView.classList.remove('hidden');
-    displayUsers();
-    displayGames();
-    populateUserDropdown();
-  } else {
-    loginView.classList.add('hidden');
-    userView.classList.remove('hidden');
-    updateUserInfo();
-    displayUserGames();
-    displayUserBets();
+  if (uname.length < 3 || pwd.length < 3) {
+    errorMessage.textContent = 'Username and password must be at least 3 characters.';
+    return;
   }
 
-  // Clear login fields
-  username.value = '';
-  password.value = '';
+  try {
+    const success = await addUser(uname, pwd);
+    if (!success) {
+      errorMessage.textContent = 'Username already exists.';
+      return;
+    }
+
+    await displayUsers();
+    await populateUserDropdown();
+    newUsername.value = '';
+    newPassword.value = '';
+  } catch {
+    errorMessage.textContent = 'Failed to create user.';
+  }
 });
 
-// Logout handlers
+addPointsForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  errorMessage.textContent = '';
+
+  const selectedUser = targetUser.value;
+  const amount = parseInt(pointsAmount.value);
+
+  if (!selectedUser || isNaN(amount) || amount <= 0) {
+    errorMessage.textContent = 'Please select a user and enter a valid amount.';
+    return;
+  }
+
+  try {
+    const success = await addPointsToUser(selectedUser, amount);
+    if (!success) {
+      errorMessage.textContent = 'Failed to add points.';
+      return;
+    }
+    await displayUsers();
+    await populateUserDropdown();
+    pointsAmount.value = '';
+  } catch {
+    errorMessage.textContent = 'Failed to add points.';
+  }
+});
+
+addGameForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  errorMessage.textContent = '';
+
+  const titleVal = gameTitle.value.trim();
+  const t1 = team1.value.trim();
+  const t2 = team2.value.trim();
+  const o1 = parseFloat(odds1.value);
+  const o2 = parseFloat(odds2.value);
+
+  if (!titleVal || !t1 || !t2 || isNaN(o1) || isNaN(o2) || o1 <= 1 || o2 <= 1) {
+    errorMessage.textContent = 'Please enter valid game and odds.';
+    return;
+  }
+
+  try {
+    await createGame(titleVal, t1, t2, o1, o2);
+    await displayGames();
+
+    gameTitle.value = '';
+    team1.value = '';
+    team2.value = '';
+    odds1.value = '';
+    odds2.value = '';
+  } catch {
+    errorMessage.textContent = 'Failed to add game.';
+  }
+});
+
 adminLogout.addEventListener('click', () => {
   currentUser = null;
   isAdmin = false;
   adminView.classList.add('hidden');
   loginView.classList.remove('hidden');
-  errorMessage.textContent = '';
 });
 
 userLogout.addEventListener('click', () => {
   currentUser = null;
-  isAdmin = false;
   userView.classList.add('hidden');
   loginView.classList.remove('hidden');
-  errorMessage.textContent = '';
 });
-
-// Create new user handler
-createUserForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const uname = newUsername.value.trim();
-  const pwd = newPassword.value;
-
-  if (!uname || !pwd) {
-    alert('Please enter username and password.');
-    return;
-  }
-  if (uname === 'Odii01') {
-    alert('Cannot create user with reserved admin username.');
-    return;
-  }
-
-  if (addUser(uname, pwd)) {
-    alert('User created successfully.');
-    newUsername.value = '';
-    newPassword.value = '';
-    displayUsers();
-    populateUserDropdown();
-  } else {
-    alert('Username already exists.');
-  }
-});
-
-// Add points handler
-addPointsForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const uname = targetUser.value;
-  const amount = pointsAmount.value;
-
-  if (!uname || !amount || isNaN(amount) || amount <= 0) {
-    alert('Please select a user and enter a valid amount.');
-    return;
-  }
-
-  if (addPointsToUser(uname, parseInt(amount))) {
-    alert(`Added ${amount} points to ${uname}.`);
-    pointsAmount.value = '';
-    displayUsers();
-    if (currentUser.username === uname) {
-      updateUserInfo();
-    }
-  } else {
-    alert('Failed to add points.');
-  }
-});
-
-// Add game handler
-addGameForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const title = gameTitle.value.trim();
-  const t1 = team1.value.trim();
-  const o1 = odds1.value.trim();
-  const t2 = team2.value.trim();
-  const o2 = odds2.value.trim();
-
-  if (!title || !t1 || !t2 || !o1 || !o2) {
-    alert('Please fill all fields.');
-    return;
-  }
-  if (isNaN(o1) || isNaN(o2) || parseFloat(o1) <= 0 || parseFloat(o2) <= 0) {
-    alert('Odds must be positive numbers.');
-    return;
-  }
-
-  createGame(title, t1, t2, o1, o2);
-  alert('Game added.');
-  addGameForm.reset();
-  displayGames();
-});
-
-// Initialize app
-initStorage();
-loginView.classList.remove('hidden');
 </script>
-
 
 </body>
 </html>
