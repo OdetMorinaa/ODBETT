@@ -972,39 +972,7 @@ userLogout.addEventListener('click', function() {
   showView(loginView);
 });
 
-// Initialize app and auto-login admin by public IP
-initStorage();
 
-const adminToken = localStorage.getItem('adminDeviceToken');
-const expectedAdminToken = 'super-secret-admin-code-459';
-
-if (adminToken === expectedAdminToken) {
-  currentUser = findUser('Odii01');
-  isAdmin = true;
-  userInfo.textContent = `Admin: Odii01`;
-  showView(adminView);
-  displayUsers();
-  displayGames();
-} else {
-  showView(loginView);
-}
-  })
-  .catch(() => {
-    showView(loginView);
-  });
-
-// Admin setup via secret URL
-if (window.location.pathname === '/admin-setup') {
-  const pwd = prompt('Enter admin password to set up this device:');
-  if (pwd === 'Odi049') {
-    localStorage.setItem('adminDeviceToken', 'super-secret-admin-code-459');
-    alert('Admin token set successfully! You can now go back to the main page.');
-    window.location.href = '/'; // Redirect to main page
-  } else {
-    alert('Incorrect password. Setup failed.');
-    window.location.href = '/';
-  }
-}
 
 </script>
 </body>
