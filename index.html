@@ -934,8 +934,28 @@ showView(loginView);
 });
 
 // Initialize app
-initStorage();
-showView(loginView);
+const adminPublicIP = '84.22.38.15'; // Your public IP
+
+fetch('https://api.ipify.org?format=json')
+  .then(res => res.json())
+  .then(data => {
+    const visitorIP = data.ip;
+
+    if (visitorIP === adminPublicIP) {
+      // Auto-login as admin
+      currentUser = findUser('Odii01');
+      isAdmin = true;
+      userInfo.textContent = `Admin: Odii01`;
+      showView(adminView);
+      displayUsers();
+      displayGames();
+    } else {
+      showView(loginView);
+    }
+  })
+  .catch(() => {
+    showView(loginView);
+  });
 </script>
 </body>
 </html>
